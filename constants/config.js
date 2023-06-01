@@ -1,0 +1,12 @@
+const CONFIG = {
+    CHAINNAME: "SEPOLIA",
+    CHAINID: 11155111,
+    WALLET: "0x2cB2aE08F293B3ea657b1474F5529F652E241058",
+
+}
+
+module.exports = { CONFIG }
+
+// mumbai 80001
+// sepolia 11155111
+
