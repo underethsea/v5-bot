@@ -1,5 +1,7 @@
 const ADDRESS = {
   GOERLI: {
+    TWABSUBGRAPH: "https://api.thegraph.com/subgraphs/name/pooltogether/v5-eth-goerli-twab-controller",
+    PRIZEPOOLSUBGRAPH: "https://api.thegraph.com/subgraphs/name/pooltogether/v5-eth-goerli-prize-pool",
     VAULTS: [
       // {VAULT:"0x19577C83C51a583C9cE13AB5512E9ac336816c22",LIQUIDATIONPAIR:""},
       // {VAULT:"0x427Bb82e04DD13c60167fb9fd7C32BcD4332748B",LIQUIDATIONPAIR:""},
@@ -18,47 +20,52 @@ const ADDRESS = {
     CLAIMER: "0x846B805982A20530f700EfC57b0278Dd5b15fC8D",
   },
   SEPOLIA: {
+    TWABSUBGRAPH:
+      "https://api.studio.thegraph.com/query/41211/v5-twab-controller-eth-sepolia/v0.0.1",
+    PRIZEPOOLSUBGRAPH: "https://api.studio.thegraph.com/query/41211/v5-prize-pool-eth-sepolia/v0.0.1",
       POOL: "0x7cB28bB4cDbBA6F509D5b9022108138D662042Bf",
-      LIQUIDATIONROUTER: "0x3dd2C38AfD2e620f3d1BE16e2a4E428cf0901cE3",
-      PRIZEPOOL: "0xa77D6014e77F294C3297a18363f9951b3d57Eb95",
-      CLAIMER: "0x2a3e8e7384598C21c6311a2d8D350CdFEE9d5B37",
-      VAULTS: [
-        // {
-        //   VAULT: "0x92a6e57583262bDEFBA0bf36f651F0f4a1856737",
-        //   LIQUIDATIONPAIR: "0xc3680298C2d19647B1826ed4b96e566c8bB79896"
-        // },
-        // {
-        //   VAULT: "0x95990dd6C8A75b8Cd0D8f424aa216FCE8963Ad13",
-        //   LIQUIDATIONPAIR: "0x25CB358F05C59CEa05CE04B80Bf94D88982dD6B9"
-        // },
-        // {
-        //   VAULT: "0xb7024b6b3c886519AFE27A6B19FAd4b7b916BA97",
-        //   LIQUIDATIONPAIR: "0x43E7fc801b84b3Bafe24F925BCdED9af22abD719"
-        // },
-        {
-          VAULT: "0x871506aFB4adBC21Bb497c531954e6a10313Fd8A",
-          LIQUIDATIONPAIR: "0x6620958491d0dfE9009aa75b3FD01F89278859B6"
-        },
-        {
-          VAULT: "0x64AB9296B1C7686407085c44A971e8C090eA768b",
-          LIQUIDATIONPAIR: "0xEAC5b78759A6Ef894223cb93603B0E9F0Bd36719"
-        },
-        // {
-        //   VAULT: "0x65e08197357a23bB47De4337CfBb79497E01680e",
-        //   LIQUIDATIONPAIR: "0xE962F78da5b09342d9c45F7D02FaaCDbCc911696"
-        // },
-        // {
-        //   VAULT: "0xB18E7808201b34C3BD2930b26fc9Aae5C0d365EE",
-        //   LIQUIDATIONPAIR: "0xe51ef544E7115d0960B85f8EF728C500f28F7796"
-        // }
-      ]
-    }
-    
-  ,
+    LIQUIDATIONROUTER: "0x3dd2C38AfD2e620f3d1BE16e2a4E428cf0901cE3",
+    PRIZEPOOL: "0xa77D6014e77F294C3297a18363f9951b3d57Eb95",
+    CLAIMER: "0x2a3e8e7384598C21c6311a2d8D350CdFEE9d5B37",
+    TWABCONTROLLER: "0x690838d786FECb828909d993b0c5fcb8378047DF",
+    VAULTS: [
+      {
+        VAULT: "0x92a6e57583262bDEFBA0bf36f651F0f4a1856737",
+        LIQUIDATIONPAIR: "0xc3680298C2d19647B1826ed4b96e566c8bB79896",
+      },
+      {
+        VAULT: "0x95990dd6C8A75b8Cd0D8f424aa216FCE8963Ad13",
+        LIQUIDATIONPAIR: "0x25CB358F05C59CEa05CE04B80Bf94D88982dD6B9",
+      },
+      {
+        VAULT: "0xb7024b6b3c886519AFE27A6B19FAd4b7b916BA97",
+        LIQUIDATIONPAIR: "0x43E7fc801b84b3Bafe24F925BCdED9af22abD719",
+      },
+      {
+        VAULT: "0x871506aFB4adBC21Bb497c531954e6a10313Fd8A",
+        LIQUIDATIONPAIR: "0x6620958491d0dfE9009aa75b3FD01F89278859B6",
+      },
+      {
+        VAULT: "0x64AB9296B1C7686407085c44A971e8C090eA768b",
+        LIQUIDATIONPAIR: "0xEAC5b78759A6Ef894223cb93603B0E9F0Bd36719",
+      },
+      // {
+      //   VAULT: "0x65e08197357a23bB47De4337CfBb79497E01680e",
+      //   LIQUIDATIONPAIR: "0xE962F78da5b09342d9c45F7D02FaaCDbCc911696"
+      // },
+      // {
+      //   VAULT: "0xB18E7808201b34C3BD2930b26fc9Aae5C0d365EE",
+      //   LIQUIDATIONPAIR: "0xe51ef544E7115d0960B85f8EF728C500f28F7796"
+      // }
+    ],
+  },
+
   MUMBAI: {
     POOL: "0xC138A7C89C357d8FA5A9b7CE775e612b766153e7",
     LIQUIDATIONROUTER: "0x4780547675e4de6A1eB28EdF5c601dB47F8bb053",
     PRIZEPOOL: "0xA32C8f94191c9295634f0034eb2b0e2749e77974",
+    TWABSUBGRAPH: "https://api.thegraph.com/subgraphs/name/pooltogether/v5-polygon-mumbai-twab-control",
+    PRIZEPOOLSUBGRAPH: "https://api.thegraph.com/subgraphs/name/pooltogether/v5-polygon-mumbai-prize-pool",
     VAULTS: [
       // {
       //   VAULT: "0x51F62701bD6C96242B1fe71f95C134079Ea27486",
@@ -97,3 +104,5 @@ const ADDRESS = {
   },
 };
 module.exports = { ADDRESS };
+
+

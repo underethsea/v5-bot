@@ -1,11 +1,18 @@
-const axios = require('axios');
+const axios = require("axios");
+const { CONFIG } = require("../constants/config");
+const { ADDRESS } = require("../constants/address");
 
-async function makeGraphQlQuery(subgraphURL, _ticket, drawStartTime, drawEndTime) {
-  const maxPageSize = 100;
-  let lastId = '';
+async function makeGraphQlQuery(
+  subgraphURL,
+  _ticket,
+  drawStartTime,
+  drawEndTime
+) {
+  const maxPageSize = 900;
+  let lastId = "";
 
   let data;
-  const results = [];
+  let results = [];
 
   while (true) {
     const queryString = `{
@@ -20,7 +27,6 @@ async function makeGraphQlQuery(subgraphURL, _ticket, drawStartTime, drawEndTime
             where: { timestamp_lte: ${drawStartTime} }
           ) {
             amount
-            timestamp
             delegateBalance
           }
 
@@ -31,7 +37,6 @@ async function makeGraphQlQuery(subgraphURL, _ticket, drawStartTime, drawEndTime
             where: { timestamp_lte: ${drawEndTime} }
           ) {
             amount
-            timestamp
             delegateBalance
           }
         }
@@ -42,12 +47,12 @@ async function makeGraphQlQuery(subgraphURL, _ticket, drawStartTime, drawEndTime
       const response = await axios.post(subgraphURL, { query: queryString });
       data = response.data;
     } catch (error) {
-      console.error('GraphQL query error:', error);
+      console.error("GraphQL query error:", error);
       break;
     }
 
-    console.log(data);
-    results.push(data.data.accounts);
+    // console.log(data);
+    results.push(...data.data.accounts);
 
     const numberOfResults = data.data.accounts.length;
     if (numberOfResults < maxPageSize) {
@@ -57,19 +62,59 @@ async function makeGraphQlQuery(subgraphURL, _ticket, drawStartTime, drawEndTime
 
     lastId = data.data.accounts[data.data.accounts.length - 1].id;
   }
-
-  return results.flat(1);
+  return results;
 }
 
-async function go() {
-  let b = await makeGraphQlQuery(
-    "https://api.studio.thegraph.com/query/41211/v5-twab-controller-eth-sepolia/v0.0.1",
-    "0x690838d786FECb828909d993b0c5fcb8378047DF",
-    3586815,
-    3580234
+async function GetTwabPlayers(startTimestamp, endTimestamp) {
+  const poolers = await makeGraphQlQuery(
+    ADDRESS[CONFIG.CHAINNAME].TWABSUBGRAPH,
+    ADDRESS[CONFIG.CHAINNAME].TWABCONTROLLER,
+    startTimestamp,
+    endTimestamp
   );
 
-  console.log(b);
+  const addressesByVault = {};
+const allPoolers = []
+  poolers.forEach((pooler) => {
+    const vault = pooler.id.split("-")[0];
+    const address = pooler.id.split("-")[1];
+
+
+    allPoolers.push({vault: vault, address: address});
+  });
+  // console.log("returning ",allPoolers.length," poolers")
+  return allPoolers;
 }
 
-go();
+// GetTwabPlayers("3580234", "3586815");
+
+// module.exports
+
+// async function getRecentDraws() {
+//   const claimFilter = {
+//     address: ADDRESS[CONFIG.CHAINNAME].PRIZEPOOL,
+//     topics: [
+//       "0x10594a72847a0979bcd5ad633b4a6bfb522d9df90aa4059e807b3044d60e5a12",
+//     ],
+//     fromBlock: -200000,
+//     toBlock: "latest",
+//   };
+
+//   const claimLogs = await PROVIDERS[CONFIG.CHAINNAME].getLogs(
+//     claimFilter,
+//     -20000,
+//     "latest"
+//   );
+
+//   const decodedClaimLogs = claimLogs.map((claim, index) => {
+//     const decodedLog =
+//       CONTRACTS.PRIZEPOOL[CONFIG.CHAINNAME].interface.parseLog(claim);
+//     return {
+//       drawId: decodedLog.args.drawId,
+//       vault: decodedLog.args.vault,
+//       winner: decodedLog.args.winner,
+//       tier: decodedLog.args.tier,
+//     };
+//   });}
+
+module.exports = GetTwabPlayers

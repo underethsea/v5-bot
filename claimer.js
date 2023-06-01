@@ -3,7 +3,8 @@ const { PROVIDERS } = require("./constants/providers.js");
 const { ADDRESS } = require("./constants/address.js");
 const { ABI } = require("./constants/abi.js");
 const { CONFIG } = require("./constants/config.js");
-const FetchPlayers = require("./utilities/players.js");
+// const FetchPlayers = require("./utilities/players.js");
+const GetTwabPlayers = require("./utilities/playersSubgraph.js")
 
 const ethers = require("ethers");
 const {Multicall} = require("./utilities/multicall.js")
@@ -62,25 +63,34 @@ async function getRecentClaims() {
 async function getWinners(
   chainId,
   prizePool,
-  vault,
+  // vault,
   numberOfTiers,
   drawId,
   claims,
+  tierTimestamps
 ) {
+  
   drawId = parseInt(drawId);
   let winsPerTier = new Array(numberOfTiers + 1).fill(0);
   let claimData = [];
-  const players = await FetchPlayers(chainId, vault);
-  console.log("players ", players.length);
 
+  // old covalent code
+  // const players = await FetchPlayers(chainId, vault);
+  // console.log("players ", players.length);
+
+ 
   const batchSize = 30;
   const calls = [];
   const results = [];
 
-  for (let x = 0; x < players.length; x++) {
-    const playerAddress = players[x].address;
+  for (let y = 0; y <= numberOfTiers; y++) {
+    let playersForTier = await GetTwabPlayers(tierTimestamps[y].startTimestamp.toString(),tierTimestamps[y].endTimestamp.toString())
 
-    for (let y = 0; y < numberOfTiers + 1; y++) {
+  for (let x = 0; x < playersForTier.length; x++) {
+    const playerAddress = playersForTier[x].address;
+    const vault = playersForTier[x].vault
+
+  
       if (tiersToClaim.length === 0 || tiersToClaim.includes(y)) {
         const call = CONTRACTS.PRIZEPOOL[CONFIG.CHAINNAME].isWinner(
           vault,
@@ -185,11 +195,13 @@ const calculateTierFrequency = (t, n, g) => {
 
 
 async function go() {
-  console.log("go")
+ console.log("starting claim bot")
+ console.log("fetching recent claim events")
+
   let claims = await getRecentClaims();
   console.log("got " + claims.length + " claim events ");
-  console.log("going");
   let allVaultWins = [];
+  console.log("calling contract data")
 
   let maxFee,
     lastCompletedDrawStartedAt,
@@ -199,7 +211,8 @@ async function go() {
     grandPrizePeriod,
     prizePoolPOOLBalance,
     accountedBalance,
-    reserve;
+    reserve,
+    tierTimestamps = [];
   try {
     [
       maxFee,
@@ -225,10 +238,17 @@ async function go() {
       CONTRACTS.PRIZEPOOL[CONFIG.CHAINNAME].reserve(),
     ]);
 
-    // do something with the results
-  } catch (error) {
-    console.log("Error fetching data:", error);
-  }
+
+
+   for (let tier = 0; tier <= numberOfTiers; tier++) {
+     const [startTimestamp, endTimestamp] = await CONTRACTS.PRIZEPOOL[CONFIG.CHAINNAME].calculateTierTwabTimestamps(tier);
+     tierTimestamps[tier] = { startTimestamp, endTimestamp };
+   }
+ 
+ } catch (error) {
+   console.log("Error fetching data:", error);
+ }
+
   lastCompletedDrawStartedAt = parseInt(lastCompletedDrawStartedAt);
   console.log("draw started ", lastCompletedDrawStartedAt);
   console.log("prize period in seconds ", drawPeriodSeconds);
@@ -279,22 +299,24 @@ async function go() {
       "  value ",
       parseFloat(tierValue) / 1e18,
       " expected frequency ",
-      frequency
+      frequency," twab time ",tierTimestamps[q]?.startTimestamp.toString()," - ",tierTimestamps[q]?.endTimestamp.toString()
     );
+    
   }
 
-  for (z = 0; z < ADDRESS[CONFIG.CHAINNAME].VAULTS.length; z++) {
-    console.log("vault ", ADDRESS[CONFIG.CHAINNAME].VAULTS[z].VAULT);
+  // for (z = 0; z < ADDRESS[CONFIG.CHAINNAME].VAULTS.length; z++) {
+  //   console.log("vault ", ADDRESS[CONFIG.CHAINNAME].VAULTS[z].VAULT);
     let newWinners = await getWinners(
       CONFIG.CHAINID,
       ADDRESS[CONFIG.CHAINNAME].PRIZEPOOL,
-      ADDRESS[CONFIG.CHAINNAME].VAULTS[z].VAULT,
+      // ADDRESS[CONFIG.CHAINNAME].VAULTS[z].VAULT,
       numberOfTiers,
       lastDrawId,
-      claims
+      claims,
+      tierTimestamps
     );
     allVaultWins = allVaultWins.concat(newWinners);
-  }
+  // }
 
   //   console.log("all vault wins", allVaultWins);
   // ("submitting claims to get fee estimate...");
