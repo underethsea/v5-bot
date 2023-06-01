@@ -1,6 +1,6 @@
 const { ethers } = require("ethers");
-const { PROVIDERS } = require("./constants/providers.js");
-const { CONFIG } = require("./constants/config.js");
+const { PROVIDERS } = require("../constants/providers.js");
+const { CONFIG } = require("../constants/config.js");
 const { MulticallWrapper } = require("ethers-multicall-provider");
 
 async function Multicall(calls) {

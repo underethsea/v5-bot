@@ -3,10 +3,10 @@ const { PROVIDERS } = require("./constants/providers.js");
 const { ADDRESS } = require("./constants/address.js");
 const { ABI } = require("./constants/abi.js");
 const { CONFIG } = require("./constants/config.js");
-const FetchPlayers = require("./players.js");
+const FetchPlayers = require("./utilities/players.js");
 
 const ethers = require("ethers");
-const {Multicall} = require("./multicall.js")
+const {Multicall} = require("./utilities/multicall.js")
 
 const delay = (ms) => new Promise((res) => setTimeout(res, ms));
 
