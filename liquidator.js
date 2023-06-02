@@ -4,9 +4,11 @@ const { PROVIDERS } = require("./constants/providers.js")
 const { ABI } = require("./constants/abi.js")
 const ethers = require("ethers");
 const { CONFIG } = require("./constants/config.js")
+const { GetLogs } = require("./utilities/getLogs.js")
 
 const chainName = CONFIG.CHAINNAME
-const slippage = .02
+// this is probably not needed but can be set for example at .02 for 2% slippage
+const slippage = 0
 
 const wally = new ethers.Wallet(process.env.PRIVATE_KEY,PROVIDERS[chainName])
 const signer = wally.connect(PROVIDERS[chainName]);
@@ -91,7 +93,7 @@ async function go() {
 
   // txReceipt.logs.map((log,index)=>{console.log("log ",index," ",log,interface.parseLog(log))}
     
-  logs = getLogs(txReceipt,ABI.SWAPEVENTS)
+  logs = GetLogs(txReceipt,ABI.SWAPEVENTS)
   logs.forEach(log=>{
     if(log.name==="Transfer") {
       // Outgoing POOL
@@ -119,17 +121,5 @@ async function go() {
   
 }
 
-const getLogs = (receipt, abi) => {
-  let iface = new ethers.utils.Interface(abi);
-  var logs = receipt.logs.map(log => {
-    var parsedLog = null;
-    try {
-      parsedLog = iface.parseLog(log);
-    } catch (e) {
-      return null;
-    }
-    return parsedLog;
-  }).filter(log => log !== null);
-  return logs;
-};
+
 go();

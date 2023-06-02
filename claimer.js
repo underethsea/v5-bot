@@ -1,20 +1,24 @@
+const ethers = require("ethers");
+const {Multicall} = require("./utilities/multicall.js")
+
 const { CONTRACTS } = require("./constants/contracts.js");
 const { PROVIDERS } = require("./constants/providers.js");
 const { ADDRESS } = require("./constants/address.js");
 const { ABI } = require("./constants/abi.js");
 const { CONFIG } = require("./constants/config.js");
-// const FetchPlayers = require("./utilities/players.js");
 const GetTwabPlayers = require("./utilities/playersSubgraph.js")
+const { GetLogs } = require("./utilities/getLogs.js")
 
-const ethers = require("ethers");
-const {Multicall} = require("./utilities/multicall.js")
+// covalent, not accurate to get twab players
+// const FetchPlayers = require("./utilities/players.js");
 
-const delay = (ms) => new Promise((res) => setTimeout(res, ms));
 
 // empty array claims all tiers
 const tiersToClaim = [];
 // max prizes to claim per tx to avoid overflowing blocks
-const maxClaimsPerTx = 10;
+const maxClaimsPerTx = 5;
+
+const delay = (ms) => new Promise((res) => setTimeout(res, ms));
 
 const wally = new ethers.Wallet(
   process.env.PRIVATE_KEY,
@@ -27,8 +31,170 @@ const claimerContract = new ethers.Contract(
   signer
 );
 
-// todo work on chains
-// todo twab player list
+async function go() {
+  console.log("starting claim bot")
+  console.log("fetching recent claim events")
+ 
+   let claims = await getRecentClaims();
+   console.log("got " + claims.length + " claim events ");
+   let allVaultWins = [];
+   console.log("")
+   console.log("calling contract data")
+ 
+   let maxFee,
+     lastCompletedDrawStartedAt,
+     drawPeriodSeconds,
+     lastDrawId,
+     numberOfTiers,
+     grandPrizePeriod,
+     prizePoolPOOLBalance,
+     accountedBalance,
+     reserve,
+     tierTimestamps = [];
+   try {
+     [
+       maxFee,
+       lastCompletedDrawStartedAt,
+       drawPeriodSeconds,
+       lastDrawId,
+       numberOfTiers,
+       grandPrizePeriod,
+       prizePoolPOOLBalance,
+       accountedBalance,
+       reserve,
+     ] = await Promise.all([
+       CONTRACTS.CLAIMER[CONFIG.CHAINNAME].computeMaxFee(),
+       CONTRACTS.PRIZEPOOL[CONFIG.CHAINNAME].lastCompletedDrawStartedAt(),
+       CONTRACTS.PRIZEPOOL[CONFIG.CHAINNAME].drawPeriodSeconds(),
+       CONTRACTS.PRIZEPOOL[CONFIG.CHAINNAME].getLastCompletedDrawId(),
+       CONTRACTS.PRIZEPOOL[CONFIG.CHAINNAME].numberOfTiers(),
+       CONTRACTS.PRIZEPOOL[CONFIG.CHAINNAME].grandPrizePeriodDraws(),
+       CONTRACTS.POOL[CONFIG.CHAINNAME].balanceOf(
+         ADDRESS[CONFIG.CHAINNAME].PRIZEPOOL
+       ),
+       CONTRACTS.PRIZEPOOL[CONFIG.CHAINNAME].accountedBalance(),
+       CONTRACTS.PRIZEPOOL[CONFIG.CHAINNAME].reserve(),
+     ]);
+ 
+ 
+ 
+    for (let tier = 0; tier <= numberOfTiers; tier++) {
+      const [startTimestamp, endTimestamp] = await CONTRACTS.PRIZEPOOL[CONFIG.CHAINNAME].calculateTierTwabTimestamps(tier);
+      tierTimestamps[tier] = { startTimestamp, endTimestamp };
+    }
+  
+  } catch (error) {
+    console.log("Error fetching data:", error);
+  }
+ 
+   lastCompletedDrawStartedAt = parseInt(lastCompletedDrawStartedAt);
+   console.log("draw started ", lastCompletedDrawStartedAt);
+   console.log("prize period in seconds ", drawPeriodSeconds);
+   console.log("tiers ", numberOfTiers + 1);
+ 
+   console.log(
+     "prize pool POOL balance ",
+     (prizePoolPOOLBalance / 1e18).toFixed(2)
+   );
+   console.log("accounted balance ", (accountedBalance / 1e18).toFixed(2));
+   console.log("reserve ", (reserve / 1e18).toFixed(2));
+ 
+   const now = Math.floor(Date.now() / 1000); // convert current time to seconds
+ 
+   const timeSinceLastDrawStarted =
+     now - lastCompletedDrawStartedAt - drawPeriodSeconds;
+   const timeUntilNextDraw = drawPeriodSeconds - timeSinceLastDrawStarted;
+ 
+   console.log(
+     `Time since last draw started: ${Math.round(
+       timeSinceLastDrawStarted / 60
+     )} minutes`
+   );
+   console.log(
+     `Time until next draw: ${Math.round(timeUntilNextDraw / 60)} minutes`
+   );
+ 
+   console.log("max claim fee ", maxFee / 1e18);
+   console.log("completed draw id", lastDrawId.toString());
+   console.log("")
+   let tierPrizeValues = [];
+   for (q = 0; q <= numberOfTiers; q++) {
+     let tierFrequency = Math.abs(
+       calculateTierFrequency(q, numberOfTiers, grandPrizePeriod)
+     );
+     let frequency = "";
+     if (tierFrequency < 1) {
+       frequency = 1 / tierFrequency + " times per draw";
+     } else {
+       frequency = "once every " + tierFrequency + " draws";
+     }
+     const tierValue = await CONTRACTS.PRIZEPOOL[
+       CONFIG.CHAINNAME
+     ].calculatePrizeSize(q);
+     tierPrizeValues.push(tierValue);
+     console.log(
+       "tier ",
+       q,
+       "  value ",
+       parseFloat(tierValue) / 1e18,
+       " expected frequency ",
+       frequency," twab time ",tierTimestamps[q]?.startTimestamp.toString()," - ",tierTimestamps[q]?.endTimestamp.toString()
+     );
+ 
+     
+   }
+   console.log("")
+ 
+   // for (z = 0; z < ADDRESS[CONFIG.CHAINNAME].VAULTS.length; z++) {
+   //   console.log("vault ", ADDRESS[CONFIG.CHAINNAME].VAULTS[z].VAULT);
+     let newWinners = await getWinners(
+       CONFIG.CHAINID,
+       ADDRESS[CONFIG.CHAINNAME].PRIZEPOOL,
+       // ADDRESS[CONFIG.CHAINNAME].VAULTS[z].VAULT,
+       numberOfTiers,
+       lastDrawId,
+       claims,
+       tierTimestamps
+     );
+     allVaultWins = allVaultWins.concat(newWinners);
+   // }
+ 
+   //   console.log("all vault wins", allVaultWins);
+   // ("submitting claims to get fee estimate...");
+   // let encodedClaims = ethers.utils.defaultAbiCoder.encode(
+   //   ["tuple(address vault, address winner, uint8 tier)[]"],
+   //   [allVaultWins]
+   // );
+   // console.log(encodedClaims);
+   //   console.log(encodedClaimData)
+   // let feeEstimate = await CONTRACTS.CLAIMER[CONFIG.CHAINNAME].callStatic.claimPrizes(
+   //   lastDrawId,
+   //   allVaultWins.slice(0,4),
+   //   CONFIG.WALLET
+   // );
+   // let estimateGas = await CONTRACTS.CLAIMER[CONFIG.CHAINNAME].estimateGas.claimPrizes(
+   //   lastDrawId,
+   //   allVaultWins.slice(0,4),
+   //   CONFIG.WALLET
+   // );
+   // console.log("gas estimate ", estimateGas.toString());
+   // console.log(feeEstimate[0].toString());
+   // console.log("estimate claims to count", feeEstimate.claimCount.toString());
+   // console.log("estimate fee", parseInt(feeEstimate.totalFees) / 1e18);
+   // if (feeEstimate.claimCount > 0) {
+ 
+   // let sendClaim = await claimerContract.claimPrizes(
+   //   lastDrawId,
+   //   allVaultWins.slice(0,4),
+   //   CONFIG.WALLET
+   // );
+   await sendClaims(claimerContract, lastDrawId, allVaultWins);
+ 
+   // } else {
+   //   console.log("no prizes to claim");
+   // }
+ }
+ 
 
 async function getRecentClaims() {
   const claimFilter = {
@@ -121,7 +287,7 @@ async function getWinners(
 
             if (didWin) {
               winsPerTier[y]++;
-              let winLog = playerAddress + " won tier " + y;
+              let winLog = "vault | " + vault + " pooler | " + playerAddress + " won tier " + y;
 
               if (
                 claims.find(
@@ -193,167 +359,6 @@ const calculateTierFrequency = (t, n, g) => {
   return odds;
 };
 
-
-async function go() {
- console.log("starting claim bot")
- console.log("fetching recent claim events")
-
-  let claims = await getRecentClaims();
-  console.log("got " + claims.length + " claim events ");
-  let allVaultWins = [];
-  console.log("calling contract data")
-
-  let maxFee,
-    lastCompletedDrawStartedAt,
-    drawPeriodSeconds,
-    lastDrawId,
-    numberOfTiers,
-    grandPrizePeriod,
-    prizePoolPOOLBalance,
-    accountedBalance,
-    reserve,
-    tierTimestamps = [];
-  try {
-    [
-      maxFee,
-      lastCompletedDrawStartedAt,
-      drawPeriodSeconds,
-      lastDrawId,
-      numberOfTiers,
-      grandPrizePeriod,
-      prizePoolPOOLBalance,
-      accountedBalance,
-      reserve,
-    ] = await Promise.all([
-      CONTRACTS.CLAIMER[CONFIG.CHAINNAME].computeMaxFee(),
-      CONTRACTS.PRIZEPOOL[CONFIG.CHAINNAME].lastCompletedDrawStartedAt(),
-      CONTRACTS.PRIZEPOOL[CONFIG.CHAINNAME].drawPeriodSeconds(),
-      CONTRACTS.PRIZEPOOL[CONFIG.CHAINNAME].getLastCompletedDrawId(),
-      CONTRACTS.PRIZEPOOL[CONFIG.CHAINNAME].numberOfTiers(),
-      CONTRACTS.PRIZEPOOL[CONFIG.CHAINNAME].grandPrizePeriodDraws(),
-      CONTRACTS.POOL[CONFIG.CHAINNAME].balanceOf(
-        ADDRESS[CONFIG.CHAINNAME].PRIZEPOOL
-      ),
-      CONTRACTS.PRIZEPOOL[CONFIG.CHAINNAME].accountedBalance(),
-      CONTRACTS.PRIZEPOOL[CONFIG.CHAINNAME].reserve(),
-    ]);
-
-
-
-   for (let tier = 0; tier <= numberOfTiers; tier++) {
-     const [startTimestamp, endTimestamp] = await CONTRACTS.PRIZEPOOL[CONFIG.CHAINNAME].calculateTierTwabTimestamps(tier);
-     tierTimestamps[tier] = { startTimestamp, endTimestamp };
-   }
- 
- } catch (error) {
-   console.log("Error fetching data:", error);
- }
-
-  lastCompletedDrawStartedAt = parseInt(lastCompletedDrawStartedAt);
-  console.log("draw started ", lastCompletedDrawStartedAt);
-  console.log("prize period in seconds ", drawPeriodSeconds);
-  console.log("tiers ", numberOfTiers + 1);
-
-  console.log(
-    "prize pool POOL balance ",
-    (prizePoolPOOLBalance / 1e18).toFixed(2)
-  );
-  console.log("accounted balance ", (accountedBalance / 1e18).toFixed(2));
-  console.log("reserve ", (reserve / 1e18).toFixed(2));
-
-  const now = Math.floor(Date.now() / 1000); // convert current time to seconds
-
-  const timeSinceLastDrawStarted =
-    now - lastCompletedDrawStartedAt - drawPeriodSeconds;
-  const timeUntilNextDraw = drawPeriodSeconds - timeSinceLastDrawStarted;
-
-  console.log(
-    `Time since last draw started: ${Math.round(
-      timeSinceLastDrawStarted / 60
-    )} minutes`
-  );
-  console.log(
-    `Time until next draw: ${Math.round(timeUntilNextDraw / 60)} minutes`
-  );
-
-  console.log("max claim fee ", maxFee / 1e18);
-  console.log("completed draw id", lastDrawId.toString());
-  let tierPrizeValues = [];
-  for (q = 0; q <= numberOfTiers; q++) {
-    let tierFrequency = Math.abs(
-      calculateTierFrequency(q, numberOfTiers, grandPrizePeriod)
-    );
-    let frequency = "";
-    if (tierFrequency < 1) {
-      frequency = 1 / tierFrequency + " times per draw";
-    } else {
-      frequency = "once every " + tierFrequency + " draws";
-    }
-    const tierValue = await CONTRACTS.PRIZEPOOL[
-      CONFIG.CHAINNAME
-    ].calculatePrizeSize(q);
-    tierPrizeValues.push(tierValue);
-    console.log(
-      "tier ",
-      q,
-      "  value ",
-      parseFloat(tierValue) / 1e18,
-      " expected frequency ",
-      frequency," twab time ",tierTimestamps[q]?.startTimestamp.toString()," - ",tierTimestamps[q]?.endTimestamp.toString()
-    );
-    
-  }
-
-  // for (z = 0; z < ADDRESS[CONFIG.CHAINNAME].VAULTS.length; z++) {
-  //   console.log("vault ", ADDRESS[CONFIG.CHAINNAME].VAULTS[z].VAULT);
-    let newWinners = await getWinners(
-      CONFIG.CHAINID,
-      ADDRESS[CONFIG.CHAINNAME].PRIZEPOOL,
-      // ADDRESS[CONFIG.CHAINNAME].VAULTS[z].VAULT,
-      numberOfTiers,
-      lastDrawId,
-      claims,
-      tierTimestamps
-    );
-    allVaultWins = allVaultWins.concat(newWinners);
-  // }
-
-  //   console.log("all vault wins", allVaultWins);
-  // ("submitting claims to get fee estimate...");
-  // let encodedClaims = ethers.utils.defaultAbiCoder.encode(
-  //   ["tuple(address vault, address winner, uint8 tier)[]"],
-  //   [allVaultWins]
-  // );
-  // console.log(encodedClaims);
-  //   console.log(encodedClaimData)
-  // let feeEstimate = await CONTRACTS.CLAIMER[CONFIG.CHAINNAME].callStatic.claimPrizes(
-  //   lastDrawId,
-  //   allVaultWins.slice(0,4),
-  //   CONFIG.WALLET
-  // );
-  // let estimateGas = await CONTRACTS.CLAIMER[CONFIG.CHAINNAME].estimateGas.claimPrizes(
-  //   lastDrawId,
-  //   allVaultWins.slice(0,4),
-  //   CONFIG.WALLET
-  // );
-  // console.log("gas estimate ", estimateGas.toString());
-  // console.log(feeEstimate[0].toString());
-  // console.log("estimate claims to count", feeEstimate.claimCount.toString());
-  // console.log("estimate fee", parseInt(feeEstimate.totalFees) / 1e18);
-  // if (feeEstimate.claimCount > 0) {
-
-  // let sendClaim = await claimerContract.claimPrizes(
-  //   lastDrawId,
-  //   allVaultWins.slice(0,4),
-  //   CONFIG.WALLET
-  // );
-  await sendClaims(claimerContract, lastDrawId, allVaultWins);
-
-  // } else {
-  //   console.log("no prizes to claim");
-  // }
-}
-
 const sendClaims = async (contract, drawId, vaultWins) => {
   console.log("total wins to claim ", vaultWins.length);
 
@@ -391,9 +396,24 @@ const sendClaims = async (contract, drawId, vaultWins) => {
 
         // console.log("gas used cumulative ",receipt?.cumulativeGasUsed.toString())
         console.log("gas price", receipt?.effectiveGasPrice.toString());
+        const logs = GetLogs(receipt,ABI.PRIZEPOOL)
+        let totalPayout = 0
+        let totalFee = 0
+        logs.forEach(log=>{
+          if(log.name==="ClaimedPrize") {
+          const payout = parseInt(log.args.payout)
+          const fee = parseInt(log.args.fee)
+          totalPayout += payout
+          totalFee += fee
+          console.log("payout ",payout," fee collected ",fee)
+    
+        }})
+        console.log("total payout ",totalPayout," total fee collected ",totalFee)
+
       }
       claimsSent += claimsToSend;
       if (claimsSent < totalClaims) {
+        console.log("")
         console.log("Waiting for the next block...");
         await delay(10000); // Wait for a new block, adjust the delay as needed
       }
@@ -402,4 +422,7 @@ const sendClaims = async (contract, drawId, vaultWins) => {
 
   console.log("All claims sent!");
 };
+
+
+
 go();
