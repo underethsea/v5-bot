@@ -28,7 +28,7 @@ Both scripts require gas which can be found on Alchemy faucets for most tesnets
 - Claims are set in `maxClaimsPerTx` batches
 
 `node liquidator.js`
-- Requires POOL which can be obtained from the token faucet for testnets
+- Requires POOL which can be obtained from the token faucet for testnets. To do so you can uncomment the drip logic on liquidator.js
 - When starting out you will need to approve the spend up POOL by the liquidation router. To do so you can uncomment the approve logic on liquidator.js
 
 

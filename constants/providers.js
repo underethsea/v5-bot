@@ -1,6 +1,9 @@
 const dotenv = require("dotenv");
 const ethers = require("ethers");
+const { CONFIG }= require("./config")
 dotenv.config();
+
+
 // const ethereumEndpoint = "https://mainnet.infura.io/v3/" + process.env.ETHEREUM_KEY;
 // const ethereumEndpoint = "https://eth-mainnet.alchemyapi.io/v2/IoY2MivSyvhBktzHoyto2ZqUsG2BEWth"
 
@@ -27,5 +30,8 @@ const PROVIDERS = {
     // OPTIMISM: new ethers.providers.JsonRpcProvider(optimismEndpoint)
 }
 
-module.exports = { PROVIDERS }
+const wally = new ethers.Wallet(process.env.PRIVATE_KEY,PROVIDERS[CONFIG.CHAINNAME])
+const SIGNER = wally.connect(PROVIDERS[CONFIG.CHAINNAME]);
+
+module.exports = { PROVIDERS, SIGNER }
 

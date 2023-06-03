@@ -1,7 +1,7 @@
 const ethers = require("ethers");
 const { ABI } = require("./abi.js");
 const { ADDRESS } = require("./address.js");
-const { PROVIDERS } = require("./providers.js");
+const { PROVIDERS, SIGNER } = require("./providers.js");
 const { CONFIG } = require("./config.js")
 
 
@@ -28,6 +28,13 @@ LIQUIDATIONROUTER: {
     ADDRESS[CONFIG.CHAINNAME].POOL,
     ABI.POOL,
     PROVIDERS[CONFIG.CHAINNAME]
+  ),
+},
+TOKENFAUCET: {
+  [CONFIG.CHAINNAME]: new ethers.Contract(
+    ADDRESS[CONFIG.CHAINNAME].TOKENFAUCET,
+    ABI.TOKENFAUCET,
+    SIGNER
   ),
 },
   PRIZEPOOL: {

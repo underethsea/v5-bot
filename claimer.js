@@ -2,7 +2,7 @@ const ethers = require("ethers");
 const {Multicall} = require("./utilities/multicall.js")
 
 const { CONTRACTS } = require("./constants/contracts.js");
-const { PROVIDERS } = require("./constants/providers.js");
+const { PROVIDERS, SIGNER } = require("./constants/providers.js");
 const { ADDRESS } = require("./constants/address.js");
 const { ABI } = require("./constants/abi.js");
 const { CONFIG } = require("./constants/config.js");
@@ -18,17 +18,16 @@ const tiersToClaim = [];
 // max prizes to claim per tx to avoid overflowing blocks
 const maxClaimsPerTx = 5;
 
+// multicall batch size
+const batchSize = 30;
+
 const delay = (ms) => new Promise((res) => setTimeout(res, ms));
 
-const wally = new ethers.Wallet(
-  process.env.PRIVATE_KEY,
-  PROVIDERS[CONFIG.CHAINNAME]
-);
-const signer = wally.connect(PROVIDERS[CONFIG.CHAINNAME]);
+
 const claimerContract = new ethers.Contract(
   ADDRESS[CONFIG.CHAINNAME].CLAIMER,
   ABI.CLAIMER,
-  signer
+  SIGNER
 );
 
 async function go() {
@@ -245,7 +244,7 @@ async function getWinners(
   // console.log("players ", players.length);
 
  
-  const batchSize = 30;
+ 
   const calls = [];
   const results = [];
 
@@ -329,7 +328,8 @@ async function getWinners(
 
       if (didWin) {
         winsPerTier[y]++;
-        let winLog = playerAddress + " won tier " + y;
+        let winLog = "vault | " + vault + " pooler | " + playerAddress + " won tier " + y;
+
 
         if (
           claims.find(
