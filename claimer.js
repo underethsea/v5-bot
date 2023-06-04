@@ -8,6 +8,7 @@ const { ABI } = require("./constants/abi.js");
 const { CONFIG } = require("./constants/config.js");
 const GetTwabPlayers = require("./utilities/playersSubgraph.js")
 const { GetLogs } = require("./utilities/getLogs.js")
+const chalk = require("chalk")
 
 // covalent, not accurate to get twab players
 // const FetchPlayers = require("./utilities/players.js");
@@ -21,8 +22,10 @@ const maxClaimsPerTx = 5;
 // multicall batch size
 const batchSize = 30;
 
+const batchDelayTime = 10000 // delay between claim batches
 const delay = (ms) => new Promise((res) => setTimeout(res, ms));
 
+const section = chalk.hex("#47FDFB")
 
 const claimerContract = new ethers.Contract(
   ADDRESS[CONFIG.CHAINNAME].CLAIMER,
@@ -31,14 +34,14 @@ const claimerContract = new ethers.Contract(
 );
 
 async function go() {
-  console.log("starting claim bot")
+  console.log(section("----- starting claim bot ------"))
   console.log("fetching recent claim events")
  
    let claims = await getRecentClaims();
    console.log("got " + claims.length + " claim events ");
    let allVaultWins = [];
    console.log("")
-   console.log("calling contract data")
+   console.log(section("----- calling contract data ------"))
  
    let maxFee,
      lastCompletedDrawStartedAt,
@@ -87,16 +90,15 @@ async function go() {
   }
  
    lastCompletedDrawStartedAt = parseInt(lastCompletedDrawStartedAt);
-   console.log("draw started ", lastCompletedDrawStartedAt);
-   console.log("prize period in seconds ", drawPeriodSeconds);
-   console.log("tiers ", numberOfTiers + 1);
+   console.log("draw started ", lastCompletedDrawStartedAt.toString(), " prize period in seconds ", drawPeriodSeconds.toString());
+
+   console.log("tiers ", (numberOfTiers + 1).toString());
  
    console.log(
      "prize pool POOL balance ",
-     (prizePoolPOOLBalance / 1e18).toFixed(2)
+     (prizePoolPOOLBalance / 1e18).toFixed(2)," accounted balance ", (accountedBalance / 1e18).toFixed(2)," reserve ", (reserve / 1e18).toFixed(2)
    );
-   console.log("accounted balance ", (accountedBalance / 1e18).toFixed(2));
-   console.log("reserve ", (reserve / 1e18).toFixed(2));
+
  
    const now = Math.floor(Date.now() / 1000); // convert current time to seconds
  
@@ -105,15 +107,15 @@ async function go() {
    const timeUntilNextDraw = drawPeriodSeconds - timeSinceLastDrawStarted;
  
    console.log(
-     `Time since last draw started: ${Math.round(
+     `Time since last draw started ${Math.round(
        timeSinceLastDrawStarted / 60
-     )} minutes`
+     )} minutes`,` Time until next draw ${Math.round(timeUntilNextDraw / 60)} minutes`
    );
    console.log(
-     `Time until next draw: ${Math.round(timeUntilNextDraw / 60)} minutes`
+     
    );
  
-   console.log("max claim fee ", maxFee / 1e18);
+   console.log("max claim fee ", (maxFee / 1e18).toString());
    console.log("completed draw id", lastDrawId.toString());
    console.log("")
    let tierPrizeValues = [];
@@ -146,6 +148,7 @@ async function go() {
  
    // for (z = 0; z < ADDRESS[CONFIG.CHAINNAME].VAULTS.length; z++) {
    //   console.log("vault ", ADDRESS[CONFIG.CHAINNAME].VAULTS[z].VAULT);
+   console.log(section("----- getting winners -----"))
      let newWinners = await getWinners(
        CONFIG.CHAINID,
        ADDRESS[CONFIG.CHAINNAME].PRIZEPOOL,
@@ -155,7 +158,7 @@ async function go() {
        claims,
        tierTimestamps
      );
-     allVaultWins = allVaultWins.concat(newWinners);
+    //  allVaultWins = allVaultWins.concat(newWinners);
    // }
  
    //   console.log("all vault wins", allVaultWins);
@@ -187,7 +190,8 @@ async function go() {
    //   allVaultWins.slice(0,4),
    //   CONFIG.WALLET
    // );
-   await sendClaims(claimerContract, lastDrawId, allVaultWins);
+   console.log(section("---- sending claims -----"))
+   await sendClaims(claimerContract, lastDrawId, newWinners);
  
    // } else {
    //   console.log("no prizes to claim");
@@ -405,7 +409,7 @@ const sendClaims = async (contract, drawId, vaultWins) => {
           const fee = parseInt(log.args.fee)
           totalPayout += payout
           totalFee += fee
-          console.log("payout ",payout," fee collected ",fee)
+          console.log("prize payout ",payout," fee collected ",fee)
     
         }})
         console.log("total payout ",totalPayout," total fee collected ",totalFee)
@@ -415,7 +419,7 @@ const sendClaims = async (contract, drawId, vaultWins) => {
       if (claimsSent < totalClaims) {
         console.log("")
         console.log("Waiting for the next block...");
-        await delay(10000); // Wait for a new block, adjust the delay as needed
+        await delay(batchDelayTime); // Wait for a new block, adjust the delay as needed
       }
     }
   }
