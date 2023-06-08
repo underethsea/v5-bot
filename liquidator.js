@@ -95,7 +95,7 @@ async function go() {
       .mul(virtualReserveIn)
       .div(virtualReserveOut);
      
- 
+ if(parseFloat(maxOut)=== 0){console.log("Nothing to liquidate, maxout=0")}else{
     try {
       tx = await liquidationRouterWithSigner.callStatic.swapExactAmountOut(
         ADDRESS[chainName].VAULTS[z].LIQUIDATIONPAIR,
@@ -164,14 +164,16 @@ async function go() {
       });
     } catch (e) {
       console.log(e);
-      console.log("arg[2] ->", e.args[2].toString());
-      console.log("arg[3] ->", e.args[3].toString());
+      console.log("arg[2] ->", e.args && e.args.length > 2 ? e.args[2].toString() : "");
+      console.log("arg[3] ->", e.args && e.args.length > 3 ? e.args[3].toString() : "");
     }
+    
+    
   }
   console.log(section("------ liquidation summary -------"))
   console.log("total gas spent ",totalGasSpent)
   console.log("total pool spent ",totalPoolSpent)
-  console.log("")
+  console.log("")}
 }
 
 go();
