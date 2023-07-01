@@ -1,7 +1,6 @@
-const dotenv = require("dotenv");
+const dotenv = require("dotenv").config({path : './.env'});
 const ethers = require("ethers");
 const { CONFIG }= require("./config")
-dotenv.config();
 
 
 // const ethereumEndpoint = "https://mainnet.infura.io/v3/" + process.env.ETHEREUM_KEY;
@@ -16,6 +15,7 @@ dotenv.config();
 const goerliEndpoint = "https://eth-goerli.g.alchemy.com/v2/" + process.env.ALCHEMY_KEY
 const mumbaiEndpoint = "https://polygon-mumbai.g.alchemy.com/v2/" + process.env.ALCHEMY_KEY
 const sepoliaEndpoint = "https://eth-sepolia.g.alchemy.com/v2/" + process.env.ALCHEMY_KEY
+const sepoliaInfura = "https://sepolia.infura.io/v3/a86edca6bd3040689463a58672d7d8e5";
 const PROVIDERS = {
     GOERLI: new ethers.providers.JsonRpcProvider(goerliEndpoint),
     MUMBAI: new ethers.providers.JsonRpcProvider(mumbaiEndpoint),

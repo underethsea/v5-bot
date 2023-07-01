@@ -14,13 +14,14 @@ async function makeGraphQlQuery(
   let data;
   let results = [];
 
+   // new subgraph uses delegateBalance() but old subgraph was twab()
   while (true) {
     const queryString = `{
         accounts(first: ${maxPageSize}, where: { id_gt: "${lastId}" }) {
           id
           delegateBalance
 
-          beforeOrAtDrawStartTime: twabs(
+          beforeOrAtDrawStartTime: delegateBalance(
             orderBy: timestamp
             orderDirection: desc
             first: 1
@@ -30,7 +31,7 @@ async function makeGraphQlQuery(
             delegateBalance
           }
 
-          beforeOrAtDrawEndTime: twabs(
+          beforeOrAtDrawEndTime: delegateBalance(
             orderBy: timestamp
             orderDirection: desc
             first: 1
@@ -75,14 +76,14 @@ async function GetTwabPlayers(startTimestamp, endTimestamp) {
 
   const addressesByVault = {};
 const allPoolers = []
+
   poolers.forEach((pooler) => {
     const vault = pooler.id.split("-")[0];
     const address = pooler.id.split("-")[1];
-
-
-    allPoolers.push({vault: vault, address: address});
+    const balance = pooler.delegateBalance
+    // console.log("vault ",vault,"pooler ",address," balance",balance)
+    allPoolers.push({vault: vault, address: address, balance: balance});
   });
-  // console.log("returning ",allPoolers.length," poolers")
   return allPoolers;
 }
 

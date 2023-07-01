@@ -4,6 +4,8 @@ const { ADDRESS } = require("./address.js");
 const { PROVIDERS, SIGNER } = require("./providers.js");
 const { CONFIG } = require("./config.js");
 
+console.log("chain",CONFIG.CHAINNAME)
+
 const CONTRACTS = {
   CLAIMER: {
     [CONFIG.CHAINNAME]: new ethers.Contract(
@@ -60,7 +62,13 @@ const CONTRACTS = {
       ABI.POOL,
       SIGNER
     ),
-  }
+  },
+  LIQUIDATIONROUTERSIGNER: {
+    [CONFIG.CHAINNAME]: new ethers.Contract(
+      ADDRESS[CONFIG.CHAINNAME].LIQUIDATIONROUTER,
+      ABI.LIQUIDATIONROUTER,
+      SIGNER
+    ),}
 };
 
 module.exports = { CONTRACTS };

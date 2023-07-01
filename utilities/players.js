@@ -1,5 +1,5 @@
 const fetch = require("cross-fetch");
-require("dotenv").config();
+const dotenv = require("dotenv").config();
 const fs = require("fs");
 
 async function FetchPlayers(chainId,ticket) {
