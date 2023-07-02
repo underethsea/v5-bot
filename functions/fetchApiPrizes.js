@@ -19,7 +19,7 @@ const FetchApiPrizes = async (chain, draw, tiersToClaim, claims) => {
   });
   // Return vault, playeraddress, tier for claim
 
-  const winsToClaim = filteredWins.map((win) => [win.v, win.p, win.t[0]]);
+  const winsToClaim = filteredWins.map((win) => [win.v, win.p, win.t, win.i]);
 
 //   console.log("wins to claim ", filteredWins.length);
 //   const filteredWinsToClaim = winsToClaim.filter((win) => {

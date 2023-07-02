@@ -4,7 +4,7 @@ const { ADDRESS } = require("./address.js");
 const { PROVIDERS, SIGNER } = require("./providers.js");
 const { CONFIG } = require("./config.js");
 
-console.log("chain",CONFIG.CHAINNAME)
+// console.log("chain",CONFIG.CHAINNAME)
 
 const CONTRACTS = {
   CLAIMER: {

@@ -13,6 +13,7 @@ const GetWinners = async (
     block = "latest"
   ) => {
 
+    console.log("chain name",chainName)
     let totalCalls = 0 
    
     const batchSize = CONFIG.BATCHSIZE

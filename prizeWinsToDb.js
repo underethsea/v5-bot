@@ -1,9 +1,7 @@
 const ethers = require("ethers");
 
-const { CONTRACTS } = require("./constants/contracts.js");
+const { CONTRACTS, ADDRESS, ABI, CHAINIDTONAME } = require("./constants/index.js");
 const { PROVIDERS, SIGNER } = require("./constants/providers.js");
-const { ADDRESS } = require("./constants/address.js");
-const { ABI } = require("./constants/abi.js");
 const { CONFIG } = require("./constants/config.js");
 // const { GetLogs } = require("../utilities/getLogs.js");
 const { AddWin, AddDraw } = require("./functions/dbDonkey.js");
@@ -18,8 +16,8 @@ const goBlock = "latest"
 const section = chalk.hex("#47FDFB");
 const batchSize = 200;
 
-async function go(block="latest") {
-
+async function PrizeWinsToDb(chainId,block="latest") {
+  console.log("chain id to name",chainId," name ",CHAINIDTONAME[chainId])
   console.log(section("----- calling contract data ------"));
   const {lastDrawId, numberOfTiers, tierTimestamps,lastCompletedDrawStartedAt, 
     drawPeriodSeconds,grandPrizePeriod, tierPrizeValues, prizesForTier} = await GetPrizePoolData(block)
@@ -27,7 +25,7 @@ async function go(block="latest") {
   
   console.log("");
   await AddDraw(
-    CONFIG.CHAINID,
+    chainId,
     lastDrawId.toString(),
     lastCompletedDrawStartedAt,
     drawPeriodSeconds,
@@ -44,7 +42,7 @@ async function go(block="latest") {
 
   console.log(section("----- getting winners -----"));
   let newWinners = await GetWinners(
-    CONFIG.CHAINNAME,
+    CHAINIDTONAME[chainId],
     numberOfTiers,
     lastDrawId,
     tierTimestamps,
@@ -67,7 +65,7 @@ async function go(block="latest") {
   }
   
   const addWinPromises = combinedArray.map(([vault, pooler, tier, indices]) =>
-  AddWin(CONFIG.CHAINID, lastDrawId.toString(), vault, pooler, tier, indices)
+  AddWin(chainId, lastDrawId.toString(), vault, pooler, tier, indices)
 );
 
 await Promise.all(addWinPromises);
@@ -146,8 +144,10 @@ goBlock += drawTime
 for (let x = 0; x <= completeBlocks.length; x++) {
     await go(completeBlocks[x] + 2);
   }*/
-  await go(goBlock);
+  await PrizeWinsToDb(CONFIG.CHAINID,nowBlock);
 }
-doAll();
+// doAll();
+
+module.exports = {PrizeWinsToDb}
 
 // getCompletedDrawLogs()

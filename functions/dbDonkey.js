@@ -85,7 +85,7 @@ async function AddWin(network, draw, vault, pooler, tier, indices) {
     }
 
     const addWinQuery =
-      "INSERT INTO wins (network, draw, vault, pooler, tier, indices) VALUES ($1, $2, $3, $4, $5, $6)";
+      "INSERT INTO wins (network, draw, vault, pooler, tier, prizeIndices) VALUES ($1, $2, $3, $4, $5, $6)";
     await DB.any(addWinQuery, [network.toString(), draw, vault, pooler, tier, indices]);
 
     return "Win added";
@@ -106,17 +106,18 @@ module.exports = { AddWin, AddDraw };
   periodSeconds INTEGER,
   tiers INTEGER,
   grandPrizePeriod INTEGER,
-  tiervalue INTEGER[],
+  tiervalues NUMERIC[],
   prizeIndices INTEGER[]
 );
 */
 /*
 CREATE TABLE wins (
   win_id SERIAL PRIMARY KEY,
+  network INTEGER,
   draw INTEGER,
   vault VARCHAR,
   pooler VARCHAR,
-  tiers INTEGER[],
-  network INTEGER
+  tier INTEGER[],
+  prizeIndices INTEGER[]
 );
 */
