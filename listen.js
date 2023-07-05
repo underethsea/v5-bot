@@ -1,6 +1,7 @@
 
 // const { CONTRACTS, ADDRESS, PROVIDERS } = require("./constants/index.js")
 const { ADDRESS } = require("./constants/address")
+const { PROVIDERS } = require("./constants/providers")
 const {PrizeWinsToDb} = require("./prizeWinsToDb.js")
 const ethers = require("ethers")
 
@@ -15,12 +16,12 @@ const FILTERS = {
 
 async function listen() {
     console.log("listening for complete award events")
-    // PROVIDERS[chain].on(FILTERS.DRAWCOMPLETED, (drawCompletedEvent) => {
+    PROVIDERS[chain].on(FILTERS.DRAWCOMPLETED, (drawCompletedEvent) => {
         try {
-            // console.log("draw completed event", drawCompletedEvent)
-            PrizeWinsToDb(1115511,"latest").then((finished)=>{console.log("db updated")})
+            console.log("draw completed event", drawCompletedEvent)
+            PrizeWinsToDb(11155111,"latest").then((finished)=>{console.log("db updated")})
         }catch(error){console.log(error)}
-    // })
+    })
 }
 
 listen()

@@ -1,10 +1,11 @@
-const CONTRACTS = require("./contracts");
-const ADDRESS = require("./address");
-const PROVIDERS = require("./providers");
+const CONFIG = require("./config")
 const ABI = require("./abi")
+const ADDRESS = require("./address");
+const { PROVIDERS, SIGNER } = require("./providers");
+const CONTRACTS = require("./contracts");
 
 const CHAINIDTONAME = {
-    1115511: "SEPOLIA",
+    11155111: "SEPOLIA",
     80001: "MUMBAI"
 
 }
@@ -14,5 +15,7 @@ module.exports = {
   ADDRESS,
   PROVIDERS,
   ABI,
+  CONFIG,
+  SIGNER,
   CHAINIDTONAME
 };

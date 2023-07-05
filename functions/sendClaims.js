@@ -1,7 +1,19 @@
 const { CONTRACTS } = require("../constants/contracts");
+const {PROVIDERS} = require("../constants/providers")
 const { CONFIG } = require("../constants/config");
 const { GetLogs } = require("../utilities/getLogs");
 const { ABI } = require("../constants/abi");
+const chalk  = require("chalk")
+
+// Function for logging with red color
+const chalkProfit = (message) => {
+  console.log(chalk.green(message));
+};
+
+// Function for logging with green color
+const chalkLoss = (message) => {
+  console.log(chalk.red(message));
+};
 
 const SendClaims = async (contract, drawId, vaultWins) => {
 
@@ -34,7 +46,7 @@ const groupedData = vaultWins.reduce((groups, entry) => {
   const winnerIndex = group.winners.indexOf(winner);
   if (winnerIndex === -1) {
     group.winners.push(winner);
-    group.prizeIndices.push([prizeIndex]);
+    group.prizeIndices.push(prizeIndex);
   } else {
     group.prizeIndices[winnerIndex].push(prizeIndex);
   }
@@ -47,7 +59,6 @@ const groupedData = vaultWins.reduce((groups, entry) => {
 for (const key in groupedData) {
   const group = groupedData[key];
   const { vault, tier, winners, prizeIndices } = group;
-  console.log("sending claim on vault ",vault," tier ",tier," winners ",winners.length," indices ",prizeIndices.flat().length)
 // console.log(winners)
 // console.log(prizeIndices)
 
@@ -57,13 +68,20 @@ let feeEstimate = await CONTRACTS.CLAIMER[
 let estimateGas = await CONTRACTS.CLAIMER[
   CONFIG.CHAINNAME
 ].estimateGas.claimPrizes(vault, tier, winners, prizeIndices, feeRecipient);
-console.log("gas estimate ", estimateGas.toString());
-console.log("estimate fee", feeEstimate.toString());
+const gasPriceEstimate = PROVIDERS[CONFIG.CHAINNAME].getGasPrice
+console.log("gas estimate ", estimateGas.toString()," estimate claim fee", feeEstimate.toString()," gas price ",gasPriceEstimate);
 // console.log("estimate fee ", parseInt(feeEstimate.totalFees) / 1e18);
+console.log("sending claim on vault ",vault," tier ",tier," winners ",winners.length," indices ",prizeIndices.flat().length)
 
   let tx = await contract.claimPrizes(vault, tier, winners, prizeIndices, feeRecipient);
   let receipt = await tx.wait()
-  console.log("gas used",receipt.gasUsed.toString())
+  // hard coded gas pricing for context
+  const ethPrice = 2000
+  const gasPrice = 2
+  const gasPriceWei = gasPrice * 1e9;
+  const transactionCost = receipt.gasUsed * gasPriceWei * ethPrice / 1e18;
+  const poolPrice = .69
+  console.log("tx", receipt.transactionHash," gas used",receipt.gasUsed.toString(), "$",transactionCost.toFixed(4))
   let totalPayout = 0;
   let totalFee = 0;
   const logs = GetLogs(receipt, ABI.PRIZEPOOL);
@@ -73,15 +91,21 @@ console.log("estimate fee", feeEstimate.toString());
       const fee = parseInt(log.args.fee);
       totalPayout += payout;
       totalFee += fee;
-      console.log("prize payout ", payout, " fee collected ", fee);
+      console.log("prize payout ", (payout/1e18).toFixed(4), " fee collected ", (fee/1e18).toFixed(4));
     }
   });
   console.log(
     "total payout ",
-    totalPayout,
+    (totalPayout/1e18).toFixed(4),
     " total fee collected ",
-    totalFee
+    (totalFee/1e18).toFixed(4)
   );
+  const netFromClaims = (totalFee/1e18)-transactionCost
+  const netFromClaimMessage = "$" + (poolPrice *(totalFee/1e18)).toFixed(4) + " fee collected  - $" + 
+  transactionCost.toFixed(4) + " tx cost = " + netFromClaims.toFixed(4)
+  netFromClaims > 0 ?
+  console.log(chalkProfit(netFromClaimMessage)):
+  console.log(chalkLoss(netFromClaimMessage))
 }
   return
 
@@ -147,7 +171,7 @@ console.log("estimate fee", feeEstimate.toString());
             const fee = parseInt(log.args.fee);
             totalPayout += payout;
             totalFee += fee;
-            console.log("prize payout ", payout, " fee collected ", fee);
+            console.log("prize payout ", (payout/1e18).toFixed(4), " fee collected ", (fee/1e18).toFixed(4));
           }
         });
         console.log(

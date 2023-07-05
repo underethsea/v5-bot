@@ -1,8 +1,12 @@
 const ethers = require("ethers");
-
-const { CONTRACTS, ADDRESS, ABI, CHAINIDTONAME } = require("./constants/index.js");
+const { CONTRACTS } = require("./constants/contracts.js");
 const { PROVIDERS, SIGNER } = require("./constants/providers.js");
+const { ADDRESS } = require("./constants/address.js");
+const { ABI } = require("./constants/abi.js");
 const { CONFIG } = require("./constants/config.js");
+const { CHAINIDTONAME } = require("./constants/index.js");
+
+// const { CONTRACTS, ADDRESS, ABI, CHAINIDTONAME } = require("./constants/index.js");
 // const { GetLogs } = require("../utilities/getLogs.js");
 const { AddWin, AddDraw } = require("./functions/dbDonkey.js");
 const { GetWinners } = require("./functions/winners.js");
@@ -146,8 +150,9 @@ for (let x = 0; x <= completeBlocks.length; x++) {
   }*/
   await PrizeWinsToDb(CONFIG.CHAINID,nowBlock);
 }
-// doAll();
+doAll();
 
 module.exports = {PrizeWinsToDb}
 
 // getCompletedDrawLogs()
+

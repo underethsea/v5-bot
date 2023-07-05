@@ -52,7 +52,7 @@ async function AddDraw(
 async function AddWin(network, draw, vault, pooler, tier, indices) {
 
     console.log("adddding ",network, draw, vault, pooler, tier, indices)
-    return
+    
   try {
     // does not check that tiers are exactly the same, just looking for player already winning that draw on that vault
     const checkForWinQuery =
