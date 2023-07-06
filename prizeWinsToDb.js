@@ -20,7 +20,8 @@ const goBlock = "latest"
 const section = chalk.hex("#47FDFB");
 const batchSize = 200;
 
-async function PrizeWinsToDb(chainId,block="latest") {
+async function PrizeWinsToDb(chainId,block="latest") { 
+console.log("block",block)
   console.log("chain id to name",chainId," name ",CHAINIDTONAME[chainId])
   console.log(section("----- calling contract data ------"));
   const {lastDrawId, numberOfTiers, tierTimestamps,lastCompletedDrawStartedAt, 
@@ -36,8 +37,10 @@ async function PrizeWinsToDb(chainId,block="latest") {
     numberOfTiers,
     grandPrizePeriod,
     tierPrizeValues.map(value => +value),
-    prizesForTier
-  );
+    prizesForTier,
+    block
+  
+);
 
   // for (z = 0; z < ADDRESS[CONFIG.CHAINNAME].VAULTS.length; z++) {
   //   console.log("vault ", ADDRESS[CONFIG.CHAINNAME].VAULTS[z].VAULT);
@@ -52,7 +55,7 @@ async function PrizeWinsToDb(chainId,block="latest") {
     tierTimestamps,
     CONFIG.TIERSTOCLAIM, 
     prizesForTier,
-    block,
+    
   );
 
   // console.log(newWinners)

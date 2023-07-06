@@ -1,6 +1,6 @@
 const ethers = require("ethers");
 const { CONTRACTS } = require("./constants/contracts.js");
-
+// const { CONTRACTS, PROVIDERS, SIGNER, ABI } = require("./constants/index")
 const { PROVIDERS, SIGNER } = require("./constants/providers.js");
 const { ADDRESS } = require("./constants/address.js");
 const { ABI } = require("./constants/abi.js");
@@ -16,7 +16,6 @@ const { GetPrizePoolData } = require("./functions/getPrizePoolData.js");
 // const FetchPlayers = require("./utilities/players.js");
 
 // todo insufficient gas to make claims error.reason *insufficient funds*
-
 
 const section = chalk.hex("#47FDFB");
 
@@ -35,9 +34,9 @@ async function go() {
   let allVaultWins = [];
   console.log("");
   console.log(section("----- calling contract data ------"));
-  const {lastDrawId, numberOfTiers, tierTimestamps, prizesForTier} = await GetPrizePoolData()
+  const {lastDrawId, numberOfTiers, tierTimestamps, prizesForTier, maxFee} = await GetPrizePoolData()
   console.log("");
-  console.log("prizes for Tier ",prizesForTier)
+  // console.log("prizes for Tier ",prizesForTier)
 
   let newWinners;
   console.log(section("----- getting winners -----"));
@@ -78,9 +77,6 @@ async function go() {
   //   console.log("no prizes to claim");
   // }
 }
-
-
-
 
 function removeAlreadyClaimed(winsToClaim, claims, draw) {
 

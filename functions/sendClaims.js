@@ -5,16 +5,15 @@ const { GetLogs } = require("../utilities/getLogs");
 const { ABI } = require("../constants/abi");
 const chalk  = require("chalk")
 
-// Function for logging with red color
 const chalkProfit = (message) => {
   console.log(chalk.green(message));
 };
 
-// Function for logging with green color
 const chalkLoss = (message) => {
   console.log(chalk.red(message));
 };
 
+// todo batch claims to CONFIG.BATCHSIZE
 const SendClaims = async (contract, drawId, vaultWins) => {
 
   let feeRecipient = CONFIG.WALLET
@@ -61,6 +60,12 @@ for (const key in groupedData) {
   const { vault, tier, winners, prizeIndices } = group;
 // console.log(winners)
 // console.log(prizeIndices)
+  // hard coded gas pricing for context
+  const ethPrice = 2000
+  const gasPrice = 1
+  const gasPriceWei = gasPrice * 1e9;
+  const poolPrice = .0003
+  const minimumToSendClaim = .0002
 
 let feeEstimate = await CONTRACTS.CLAIMER[
   CONFIG.CHAINNAME
@@ -68,20 +73,31 @@ let feeEstimate = await CONTRACTS.CLAIMER[
 let estimateGas = await CONTRACTS.CLAIMER[
   CONFIG.CHAINNAME
 ].estimateGas.claimPrizes(vault, tier, winners, prizeIndices, feeRecipient);
-const gasPriceEstimate = PROVIDERS[CONFIG.CHAINNAME].getGasPrice
-console.log("gas estimate ", estimateGas.toString()," estimate claim fee", feeEstimate.toString()," gas price ",gasPriceEstimate);
+
+// const gasPriceEstimate = await PROVIDERS[CONFIG.CHAINNAME].getGasPrice()
+
+const transactionCostEstimate = (gasPrice / 1e18)*estimateGas
+const estimateNetFromClaims = ((feeEstimate/1e18)*poolPrice)-transactionCostEstimate
+
+console.log("claim estimate ", estimateGas.toString()," gas @ ",gasPrice.toString(),
+" wei = ",transactionCostEstimate.toFixed(6),"E | claim fee est ", (feeEstimate/1e18).toFixed(4)," POOL");
+
 // console.log("estimate fee ", parseInt(feeEstimate.totalFees) / 1e18);
+
+// const netEstimateMessage =  ((feeEstimate/1e18)*poolPrice).toFixed(4) + "E fee collected  - " + 
+// transactionCostEstimate.toFixed(4) + "E tx cost = " + estimateNetFromClaims.toFixed(4) + "E"
+// console.log(netEstimateMessage)
+console.log("estimate net",estimateNetFromClaims," min to send claim",minimumToSendClaim)
+if(estimateNetFromClaims > minimumToSendClaim) {
+
 console.log("sending claim on vault ",vault," tier ",tier," winners ",winners.length," indices ",prizeIndices.flat().length)
 
   let tx = await contract.claimPrizes(vault, tier, winners, prizeIndices, feeRecipient);
   let receipt = await tx.wait()
-  // hard coded gas pricing for context
-  const ethPrice = 2000
-  const gasPrice = 2
-  const gasPriceWei = gasPrice * 1e9;
+
   const transactionCost = receipt.gasUsed * gasPriceWei * ethPrice / 1e18;
-  const poolPrice = .69
-  console.log("tx", receipt.transactionHash," gas used",receipt.gasUsed.toString(), "$",transactionCost.toFixed(4))
+
+  console.log("tx", receipt.transactionHash," gas used",receipt.gasUsed.toString(), " tx cost $",transactionCost.toFixed(4))
   let totalPayout = 0;
   let totalFee = 0;
   const logs = GetLogs(receipt, ABI.PRIZEPOOL);
@@ -106,6 +122,7 @@ console.log("sending claim on vault ",vault," tier ",tier," winners ",winners.le
   netFromClaims > 0 ?
   console.log(chalkProfit(netFromClaimMessage)):
   console.log(chalkLoss(netFromClaimMessage))
+}else{console.log("...not profitable")}
 }
   return
 

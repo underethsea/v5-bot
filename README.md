@@ -1,15 +1,17 @@
 # v5-bot
 
-For liquidating yield from V5 vaults and claiming prizes from the prize pool
+This repo includes prize calculations and database population for a postgres DB.
 
-## this is a WIP!! Some todos...
+Also included are bots for liquidating yield from V5 vaults and claiming prizes from the prize pool
 
-- Implement pricing
+## this is a WIP!! Some improvements to make...
+
+- More pricing and swap
 - Decimal parsing
 - Better play by play
 - Better receipt handling
-- Move wallet connection to constants
 - General cleanup
+- Prize calc and DB error handling
 
 # Getting started
 
@@ -33,23 +35,26 @@ you will need to approve of POOL spend by the liquidation router, this can be do
 
 new deployments can be added in constants/address.js
 
+more config options
+
+- `CONFIG.USEAPI` boolean enables use of prize api instead of calculating prizes
+- `CONFIG.TIERSTOCLAIM` [] specify which prize tiers to claim, empty is all tiers
+- `CONFIG.MAXCLAIMS` number  maximum claims per transaction to avoid block overflow
+- `CONFIG.BATCHSIZE` number of wins to calculate per multicall
+- `TXDELAY` number ms time between transactions 
 
 ## `node claimer.js`
 
-- `tiersToClaim` can be specified at the top of the script 
-- Claims are sent in `maxClaimsPerTx` batches
 - Recent claim events are checked to avoid duplicate claims
 - Time timestamps are used to fetch the Poolers for each tier using the TWAB subgraph
-- The script uses multicall to check if Poolers won and if they have not already claimed
+- The script uses multicall to check if Poolers won (or API) and if they have not already claimed
+- Checks for profitability of claim
 
 ## `node liquidator.js`
 
 - iterrates through the vaults on the configured chain to liquidate yield
 
-
-
-
-
-
+## `node listen.js`
+- listens for complete draw events to trigger prize calcs and update database
 
 

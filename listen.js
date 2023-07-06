@@ -19,7 +19,7 @@ async function listen() {
     PROVIDERS[chain].on(FILTERS.DRAWCOMPLETED, (drawCompletedEvent) => {
         try {
             console.log("draw completed event", drawCompletedEvent)
-            PrizeWinsToDb(11155111,"latest").then((finished)=>{console.log("db updated")})
+            PrizeWinsToDb(11155111,drawCompletedEvent.blockNumber).then((finished)=>{console.log("db updated")})
         }catch(error){console.log(error)}
     })
 }

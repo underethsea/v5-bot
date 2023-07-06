@@ -8,7 +8,8 @@ async function AddDraw(
   tiers,
   grandPrizePeriod,
   tierValues,
-  prizesForTier
+  prizesForTier,
+  block
 ) {
   try {
 
@@ -30,8 +31,18 @@ async function AddDraw(
     const startedAtTimestamp = new Date(startedAt * 1000);
 
     const addDrawQuery =
-      "INSERT INTO draws (network,draw,startedAt,periodSeconds,tiers,grandPrizePeriod, tierValues, prizeIndices) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)";
+      "INSERT INTO draws (network,draw,startedAt,periodSeconds,tiers,grandPrizePeriod, tierValues, prizeIndices, block) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)";
     console.log("add draw query ", addDrawQuery);
+console.log( network,
+      draw,
+      startedAtTimestamp,
+      periodSeconds,
+      tiers,
+      grandPrizePeriod,
+      tierValues,
+      prizesForTier,
+      parseInt(block))
+
     await DB.any(addDrawQuery, [
       network,
       draw,
@@ -40,7 +51,8 @@ async function AddDraw(
       tiers,
       grandPrizePeriod,
       tierValues,
-      prizesForTier
+      prizesForTier,
+      parseInt(block)
     ]);
 
     return "Win added";
@@ -107,7 +119,8 @@ module.exports = { AddWin, AddDraw };
   tiers INTEGER,
   grandPrizePeriod INTEGER,
   tiervalues NUMERIC[],
-  prizeIndices INTEGER[]
+  prizeIndices INTEGER[],
+  block INTEGER
 );
 */
 /*
